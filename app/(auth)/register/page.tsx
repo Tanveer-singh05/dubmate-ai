@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { motion } from "framer-motion";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 import { api, ApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -71,9 +71,7 @@ export default function RegisterPage() {
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
       <div className="flex items-center justify-center gap-2 mb-6">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
-          <Sparkles size={20} className="text-white" />
-        </div>
+        <img src="/favicon.ico" alt="" className="w-10 h-10 rounded-xl" />
         <span className="font-bold text-xl">DubMate AI</span>
       </div>
 

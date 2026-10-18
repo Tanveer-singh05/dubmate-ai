@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -10,9 +9,7 @@ export function Header() {
     <header className="border-b border-border/60 backdrop-blur-xl bg-bg/70 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto flex items-center justify-between px-6 h-16">
         <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-sm shadow-primary/30 group-hover:shadow-md group-hover:shadow-primary/40 transition-all">
-            <Sparkles size={16} className="text-primary-fg" strokeWidth={2.5} />
-          </div>
+          <img src="/favicon.ico" alt="" className="w-8 h-8 rounded-lg" />
           <span className="font-semibold text-[15px] tracking-tight">
             DubMate AI
           </span>

@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Sparkles } from "lucide-react";
 
 export function Footer() {
   const year = new Date().getFullYear();
@@ -10,9 +9,7 @@ export function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-12 mb-16">
           <div className="col-span-2 md:col-span-1">
             <div className="flex items-center gap-2.5 mb-4">
-              <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
-                <Sparkles size={14} className="text-primary-fg" strokeWidth={2.5} />
-              </div>
+              <img src="/favicon.ico" alt="" className="w-7 h-7 rounded-lg" />
               <span className="font-semibold text-sm tracking-tight">DubMate AI</span>
             </div>
             <p className="text-sm text-muted leading-relaxed max-w-xs">

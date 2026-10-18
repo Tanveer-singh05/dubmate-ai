@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, KeyRound, Film, Sparkles, X, Coins } from "lucide-react";
+import { LayoutDashboard, KeyRound, Film, X, Coins } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRuntimeMode } from "@/lib/runtime-mode";
 
@@ -33,9 +33,7 @@ export function Sidebar({ mobileOpen = false, onClose }: SidebarProps) {
           onClick={onClose}
           className="flex items-center gap-2.5 group"
         >
-          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center shadow-sm shadow-primary/30">
-            <Sparkles size={14} className="text-primary-fg" strokeWidth={2.5} />
-          </div>
+          <img src="/favicon.ico" alt="" className="w-7 h-7 rounded-lg" />
           <span className="font-semibold text-sm tracking-tight">DubMate AI</span>
         </Link>
         {onClose && (
