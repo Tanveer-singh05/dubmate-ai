@@ -1,0 +1,367 @@
+import { useAuthStore } from "./auth-store";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+export class ApiError extends Error {
+  status: number;
+  // Full `detail` from the backend if it was an object, otherwise null.
+  // The `.message` field is always a human-readable string so existing
+  // call sites (toast(e.message)) keep working.
+  detail: Record<string, any> | null;
+  constructor(
+    message: string,
+    status: number,
+    detail: Record<string, any> | null = null
+  ) {
+    super(message);
+    this.status = status;
+    this.detail = detail;
+  }
+}
+
+export type APIKeyOut = {
+  id: number;
+  provider: string;
+  label: string;
+  masked_key: string;
+  is_locked: boolean;
+  is_default: boolean;
+  usage_count: number;
+  last_used_at: string | null;
+  last_validation_ok: boolean;
+  last_validation_error: string;
+  created_at: string;
+};
+
+async function request<T>(
+  path: string,
+  options: RequestInit = {},
+  isFormData = false
+): Promise<T> {
+  const token = useAuthStore.getState().token;
+  const headers: Record<string, string> = {
+    ...(isFormData ? {} : { "Content-Type": "application/json" }),
+    ...((options.headers as Record<string, string>) || {}),
+  };
+
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  const res = await fetch(`${API_URL}${path}`, { ...options, headers });
+
+  if (!res.ok) {
+    let message = res.statusText;
+    let detailObj: Record<string, any> | null = null;
+    try {
+      const body = await res.json();
+      const d = body?.detail ?? body?.error ?? body;
+      if (d && typeof d === "object") {
+        detailObj = d;
+        message = d.message || d.error || JSON.stringify(d);
+      } else {
+        message = String(d);
+      }
+    } catch {}
+    throw new ApiError(message, res.status, detailObj);
+  }
+
+  // Handle 204 No Content and any other empty-body responses.
+  // Calling .json() on an empty body throws
+  // "Unexpected end of JSON input".
+  if (res.status === 204 || res.headers.get("content-length") === "0") {
+    return undefined as T;
+  }
+  const text = await res.text();
+  if (!text) return undefined as T;
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    return undefined as T;
+  }
+}
+
+export const api = {
+  // ---- Auth ----
+  register: (data: { email: string; name: string; password: string }) =>
+    request<{
+      ok: boolean;
+      requires_verification: boolean;
+      email: string;
+      user_id: number;
+      message: string;
+    }>("/auth/register", { method: "POST", body: JSON.stringify(data) }),
+
+  login: (data: { email: string; password: string }) =>
+    request<{ access_token: string; user_id: number; email: string; name: string }>(
+      "/auth/login",
+      { method: "POST", body: JSON.stringify(data) }
+    ),
+
+  me: () =>
+    request<{
+      id: number;
+      email: string;
+      name: string;
+      is_admin: boolean;
+      created_at: string;
+    }>("/auth/me"),
+
+  verifyEmail: (data: { email: string; otp: string }) =>
+    request<{ access_token: string; user_id: number; email: string; name: string }>(
+      "/auth/verify-email",
+      { method: "POST", body: JSON.stringify(data) }
+    ),
+
+  resendOtp: (data: { email: string }) =>
+    request<{ ok: boolean; message: string }>("/auth/resend-otp", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  // ---- Billing / Credits ----
+  getPacks: (currency: "USD" | "INR" = "INR") =>
+    request<{
+      currency: string;
+      packs: Array<{
+        pack_id: string;
+        name: string;
+        currency: string;
+        symbol: string;
+        price_small: number;
+        price_major: number;
+        price_display: string;
+        credits: number;
+        cloud_minutes: number;
+        storage_gb: number;
+        retention_days: number;
+      }>;
+      free_tier: {
+        pack_id: string;
+        currency: string;
+        credits: number;
+        cloud_minutes: number;
+        storage_gb: number;
+        retention_days: number;
+      };
+    }>(`/billing/packs?currency=${encodeURIComponent(currency)}`),
+
+  getBalance: () =>
+    request<{ user_id: number; balance: number; balance_minutes: number }>(
+      "/billing/balance"
+    ),
+
+  getOrders: () =>
+    request<{
+      orders: Array<{
+        order_id: string;
+        pack_id: string;
+        provider: string;
+        currency: string;
+        symbol: string;
+        amount_small: number;
+        amount_major: number;
+        amount_display: string;
+        credits: number;
+        status: string;
+        created_at: string;
+        paid_at: string | null;
+      }>;
+    }>("/billing/orders"),
+
+  startCheckout: (data: { pack_id: string; currency: "USD" | "INR" }) =>
+    request<{
+      order_id: string;
+      checkout_url: string;
+      currency: string;
+      symbol: string;
+      amount_small: number;
+      amount_major: number;
+      amount_display: string;
+      credits: number;
+      expires_at: string;
+    }>("/billing/checkout", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+
+  // ---- API Keys ----
+  listKeys: () => request<APIKeyOut[]>("/api-keys"),
+
+  addKey: (data: {
+    provider: string;
+    label: string;
+    api_key: string;
+    is_default: boolean;
+  }) => request<APIKeyOut>("/api-keys", { method: "POST", body: JSON.stringify(data) }),
+
+  listJobs: (days: number = 7) =>
+    request<{
+      count: number;
+      successful: number;
+      failed: number;
+      days: number;
+      jobs: Array<{
+        id: string;
+        status: string;
+        video_filename: string;
+        source_language: string;
+        target_language: string;
+        output_video_url: string;
+        error: string;
+        created_at: string | null;
+        completed_at: string | null;
+      }>;
+    }>(`/jobs?days=${days}`),
+
+  updateKey: (
+    id: number,
+    data: { label?: string; is_locked?: boolean; is_default?: boolean }
+  ) =>
+    request<APIKeyOut>(`/api-keys/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+
+  validateKey: (id: number) =>
+    request<APIKeyOut>(`/api-keys/${id}/validate`, { method: "POST" }),
+
+    deleteKey: (id: number) => request<{ ok: boolean }>(`/api-keys/${id}`, { method: "DELETE" }),
+
+  revealKey: (id: number) =>
+    request<{ id: number; provider: string; plaintext: string }>(
+      `/api-keys/${id}/reveal`
+    ),
+  
+  previewTTS: (data: {
+    text: string;
+    reference_path: string;
+    language?: string;
+    character_name?: string;
+    character_gender?: string;
+    emotion?: string;
+    speaking_style?: string;
+    speaker_id?: string;
+  }) => {
+    const fd = new FormData();
+    fd.append("text", data.text);
+    fd.append("reference_path", data.reference_path);
+    fd.append("language", data.language ?? "Hindi");
+    fd.append("character_name", data.character_name ?? "");
+    fd.append("character_gender", data.character_gender ?? "unknown");
+    fd.append("emotion", data.emotion ?? "neutral");
+    fd.append("speaking_style", data.speaking_style ?? "natural");
+    fd.append("speaker_id", data.speaker_id ?? "");
+    return request<{ url: string; cache_hit: boolean }>(
+      "/preview/tts",
+      { method: "POST", body: fd },
+      true,
+    );
+  },
+  
+  uploadVoiceReference: (data: {
+    blob: Blob;
+    file_id: string;
+    character_name: string;
+  }) => {
+    const fd = new FormData();
+    const ext = data.blob.type.includes("wav")
+      ? "wav"
+      : data.blob.type.includes("ogg")
+      ? "ogg"
+      : "webm";
+    fd.append("audio", data.blob, `recording.${ext}`);
+    fd.append("file_id", data.file_id);
+    fd.append("character_name", data.character_name);
+    return request<{ url: string; path: string; character_name: string }>(
+      "/characters/upload-voice-reference",
+      { method: "POST", body: fd },
+      true,
+    );
+  },
+  
+  listVoiceLibrary: () =>
+    request<
+      Array<{
+        id: string;
+        name: string;
+        audio_url: string;
+        audio_path: string;
+        gender: string;
+        speaking_style: string | null;
+        archetype: string | null;
+        sample_line: string | null;
+        personality_traits: string[];
+        source_series_id: string | null;
+        source_character_name: string | null;
+        created_at: string;
+        updated_at: string;
+      }>
+    >("/voice-library"),
+
+  saveToVoiceLibrary: (data: {
+    name: string;
+    audio_path: string;
+    gender?: string;
+    speaking_style?: string;
+    archetype?: string;
+    sample_line?: string;
+    personality_traits?: string[];
+    source_series_id?: string;
+    source_character_name?: string;
+  }) =>
+    request<{
+      id: string;
+      name: string;
+      audio_url: string;
+      audio_path: string;
+      gender: string;
+      speaking_style: string | null;
+      archetype: string | null;
+      sample_line: string | null;
+      personality_traits: string[];
+      source_series_id: string | null;
+      source_character_name: string | null;
+      created_at: string;
+      updated_at: string;
+    }>("/voice-library", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  deleteVoiceLibraryItem: (id: string) =>
+    request<{ ok?: boolean } | void>(`/voice-library/${id}`, {
+      method: "DELETE",
+    }),
+    
+  forgotPassword: (email: string) =>
+    request<{ ok: boolean; message?: string }>("/auth/forgot-password", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    }),
+
+  resetPassword: (token: string, new_password: string) =>
+    request<{ ok: boolean; email: string }>("/auth/reset-password", {
+      method: "POST",
+      body: JSON.stringify({ token, new_password }),
+    }),
+
+  googleAuth: (credential: string) =>
+    request<{
+      access_token: string;
+      token_type: string;
+      user_id: number;
+      email: string;
+      name: string;
+    }>("/auth/google", {
+      method: "POST",
+      body: JSON.stringify({ credential }),
+    }),
+
+    latestRunningJob: () =>
+      request<{
+        file_id: string;
+        percent: number;
+        phase: string;
+        detail: string;
+      }>("/jobs/latest-running"),
+};

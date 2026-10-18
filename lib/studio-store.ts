@@ -1,0 +1,143 @@
+"use client";
+
+import { create } from "zustand";
+
+export type CharacterProfile = {
+  character_name: string;
+  gender: string;
+  total_segments: number;
+  total_duration_sec: number;
+  sample_lines: string[];
+  face: { image_url: string | null; dominant_color: string | null } | null;
+  face_candidates?: Array<{
+    image_url: string | null;
+    dominant_color: string | null;
+    timestamp_sec: number | null;
+    detector: string;
+  }>;
+  voice_clip_url: string | null;
+  speaker_id?: string;
+  age_range: string;
+  personality_traits: string[];
+  speaking_style: string;
+  relationships: Record<string, string>;
+  archetype: string;
+  voice_style_override?: string;
+  custom_face_url?: string;
+  // Session 1: per-character voice + formality
+  assigned_voice_id?: string | null;
+  assigned_formality?: "auto" | "formal" | "informal" | "intimate";
+  // Phase 5: per-character pitch offset (semitones, -6..+6, 0 = natural)
+  pitchOffset?: number;
+};
+
+export type VoiceLibraryItem = {
+  id: string;
+  name: string;
+  audio_url: string;
+  audio_path?: string;
+  gender: string;
+  speaking_style: string | null;
+  source_character_name?: string | null;
+};
+
+export type FormalityLevel = "auto" | "formal" | "informal" | "intimate";
+
+export type SegmentRecord = {
+  start: number;
+  end: number;
+  text: string;
+  speaker: string;
+  character?: string;
+  [key: string]: unknown;
+};
+
+export type AnalysisResult = {
+  file_id: string;
+  characters: CharacterProfile[];
+  raw_segments: SegmentRecord[];
+  content_type?: string;
+  content_confidence?: number;
+  content_reason?: string;
+};
+
+export type DubResult = {
+  output_package?: {
+    visual_lipsync_result?: {
+      status?: string;
+      output_url?: string;
+      engine?: string;
+      duration_sec?: number;
+      error?: string;
+      failed?: boolean;
+    };
+    summary?: {
+      file_id?: string;
+    };
+  };
+  dubbed_video?: string | null;
+};
+
+type StudioStep = "upload" | "analyzing" | "review" | "dubbing" | "done";
+
+type StudioState = {
+  step: StudioStep;
+  file: File | null;
+  analysis: AnalysisResult | null;
+  editedChars: CharacterProfile[];
+  targetLang: string;
+  emotionIntensity: string;
+  lipsyncQuality: string;
+  sourceLang: string;
+  asrNoiseFilter: string;
+  result: DubResult | null;
+  globalFormality: FormalityLevel;
+  voiceLibrary: VoiceLibraryItem[];
+
+  setStep: (s: StudioStep) => void;
+  setFile: (f: File | null) => void;
+  setAnalysis: (a: AnalysisResult | null) => void;
+  setEditedChars: (c: CharacterProfile[]) => void;
+  setTargetLang: (v: string) => void;
+  setEmotionIntensity: (v: string) => void;
+  setLipsyncQuality: (v: string) => void;
+  setSourceLang: (v: string) => void;
+  setAsrNoiseFilter: (v: string) => void;
+  setResult: (r: DubResult | null) => void;
+  setGlobalFormality: (v: FormalityLevel) => void;
+  setVoiceLibrary: (v: VoiceLibraryItem[]) => void;
+  reset: () => void;
+};
+
+const INITIAL = {
+  step: "upload" as StudioStep,
+  file: null,
+  analysis: null,
+  editedChars: [],
+  targetLang: "Hindi",
+  emotionIntensity: "auto",
+  lipsyncQuality: "enhanced",
+  sourceLang: "auto",
+  asrNoiseFilter: "auto",
+  result: null,
+  globalFormality: "auto" as FormalityLevel,
+  voiceLibrary: [] as VoiceLibraryItem[],
+};
+
+export const useStudioStore = create<StudioState>()((set) => ({
+  ...INITIAL,
+
+  setStep: (step) => set({ step }),
+  setFile: (file) => set({ file }),
+  setAnalysis: (analysis) => set({ analysis }),
+  setEditedChars: (editedChars) => set({ editedChars }),
+  setTargetLang: (targetLang) => set({ targetLang }),
+  setEmotionIntensity: (emotionIntensity) => set({ emotionIntensity }),
+  setLipsyncQuality: (lipsyncQuality) => set({ lipsyncQuality }),
+  setSourceLang: (sourceLang) => set({ sourceLang }),
+  setAsrNoiseFilter: (asrNoiseFilter) => set({ asrNoiseFilter }),
+  setResult: (result) => set({ result }),
+  setGlobalFormality: (globalFormality) => set({ globalFormality }),
+  setVoiceLibrary: (voiceLibrary) => set({ voiceLibrary }),
+  reset: () => set(INITIAL),
+}));
