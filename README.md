@@ -1,36 +1,19 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# DubMate AI
+
+A full-stack automated video dubbing and lip-syncing pipeline engineered for resource-constrained hardware. 
+
+DubMate AI takes a talking-head video, isolates the audio, transcribes and translates it, generates new TTS audio, and synchronizes the speaker's lip movements to the new audio—all optimized to run locally on an NVIDIA GTX 1650 (4GB VRAM).
+
+## Architecture & Tech Stack
+* **Frontend:** Next.js
+* **Backend:** FastAPI, SQLModel
+* **AI Models:** Whisper (Transcription), Pyannote (Speaker Diarization), YuNet (Facial Tracking), Wav2Lip & GFPGAN (Lip-sync & Face Restoration)
+* **Media Processing:** FFmpeg (Python Subprocesses), yt-dlp
+
+## Core Engineering Features
+* **Hardware Optimization:** Engineered memory management protocols and asynchronous routing to prevent VRAM overflow during simultaneous face-tracking and audio generation.
+* **Multi-Face Tracking:** Utilizes robust bounding-box logic to maintain consistent face tracking across dynamic video cuts.
+* **Automated Media Routing:** Seamlessly hands off data between CPU-bound tasks (FFmpeg extraction) and GPU-bound tasks (Wav2Lip inference).
 
 ## Getting Started
-
-First, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+*(Add your installation steps here later: e.g., `pip install -r requirements.txt`, `uvicorn main:app --reload`)*
